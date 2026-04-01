@@ -4,11 +4,11 @@ import PyPDF2
 # Page config
 st.set_page_config(page_title="Car Loan AI Assistant", layout="wide")
 
-# Custom CSS (WHITE UI)
+# White UI styling
 st.markdown("""
 <style>
 body {
-    background-color: #ffffff;
+    background-color: white;
 }
 h1 {
     color: #2E86C1;
@@ -29,19 +29,22 @@ h2, h3 {
 
 # Title
 st.title("🚗 Car Loan Contract AI Assistant")
-st.write("Analyze your loan agreement and get smart insights 📊")
+st.write("Upload your contract and get smart insights 📊")
 
 # Upload file
-uploaded_file = st.file_uploader("📄 Upload your Contract (PDF)", type=["pdf"])
+uploaded_file = st.file_uploader("📄 Upload PDF", type=["pdf"])
 
 # Extract text
 def extract_text(file):
-    pdf_reader = PyPDF2.PdfReader(file)
-    text = ""
-    for page in pdf_reader.pages:
-        if page.extract_text():
-            text += page.extract_text()
-    return text.lower()
+    try:
+        pdf_reader = PyPDF2.PdfReader(file)
+        text = ""
+        for page in pdf_reader.pages:
+            if page.extract_text():
+                text += page.extract_text()
+        return text.lower()
+    except:
+        return ""
 
 # Analyze risks
 def analyze_contract(text):
@@ -88,15 +91,22 @@ def generate_suggestions(risks):
 # Summary
 def generate_summary(text):
     sentences = text.split(".")
-    return ". ".join(sentences[:3])
+    return ". ".join(sentences[:3]) if len(sentences) > 3 else text
 
-# Main logic
-if uploaded_file:
+# MAIN
+if uploaded_file is not None:
+
     st.success("✅ File uploaded successfully!")
 
-    if st.button("🔍 Analyze Contract"):
-        text = extract_text(uploaded_file)
+    # Automatically analyze (no button issue)
+    text = extract_text(uploaded_file)
 
+    # Debug info
+    st.write("📊 Extracted Text Length:", len(text))
+
+    if len(text) == 0:
+        st.error("❌ Cannot read this PDF. Try another file or simple text PDF.")
+    else:
         risks = analyze_contract(text)
         score = calculate_score(risks)
         suggestions = generate_suggestions(risks)
@@ -104,11 +114,11 @@ if uploaded_file:
 
         st.divider()
 
-        # Summary Section
+        # Summary
         with st.expander("📄 Contract Summary"):
             st.write(summary)
 
-        # Layout columns
+        # Columns
         col1, col2 = st.columns(2)
 
         with col1:
@@ -117,7 +127,7 @@ if uploaded_file:
                 for r in risks:
                     st.write(r)
             else:
-                st.write("✅ No major risks found")
+                st.success("No major risks found ✅")
 
         with col2:
             st.subheader("📊 Risk Score")
@@ -136,11 +146,12 @@ if uploaded_file:
 
         st.divider()
 
-        # Extra Feature
+        # Final Advice
         st.subheader("📌 Final Advice")
         if score > 60:
-            st.error("High risk contract! Review carefully ⚠️")
+            st.error("⚠️ High risk contract! Review carefully.")
         elif score > 30:
-            st.warning("Moderate risk. Consider negotiation.")
+            st.warning("⚠️ Moderate risk. Try negotiation.")
         else:
-            st.success("Low risk contract 👍")
+            st.success("✅ Low risk contract. Looks good!")
+# Main logic
