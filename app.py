@@ -4,48 +4,6 @@ import PyPDF2
 # Page config
 st.set_page_config(page_title="Car Loan AI Assistant", layout="wide")
 
-# ✅ WHITE UI + DARK TEXT FIX
-st.markdown("""
-<style>
-/* Background */
-[data-testid="stAppViewContainer"] {
-    background-color: #ffffff;
-}
-
-/* Force all text to dark */
-html, body, [class*="css"] {
-    color: #000000 !important;
-}
-
-/* Headings */
-h1 {
-    color: #2E86C1 !important;
-    text-align: center;
-}
-h2, h3 {
-    color: #1B4F72 !important;
-}
-
-/* Buttons */
-.stButton>button {
-    background-color: #2E86C1;
-    color: white;
-    border-radius: 8px;
-    height: 3em;
-    width: 100%;
-}
-
-/* Cards */
-.card {
-    padding: 15px;
-    border-radius: 10px;
-    background-color: #f8f9fa;
-    margin-bottom: 10px;
-    color: black;
-}
-</style>
-""", unsafe_allow_html=True)
-
 # Title
 st.title("🚗 Car Loan Contract AI Assistant")
 st.write("Analyze your contract and get smart insights 📊")
@@ -68,11 +26,11 @@ def extract_text(file):
 # Risk detection
 def analyze_contract(text):
     risk_dict = {
-        "⚠️ Penalty Charges": ["penalty", "fine"],
-        "💰 High Interest": ["interest", "interest rate"],
-        "⏰ Late Payment Fee": ["late fee", "delay"],
-        "📑 Hidden Charges": ["charges", "processing fee"],
-        "❌ Termination Clause": ["termination", "cancel"]
+        "Penalty Charges": ["penalty", "fine"],
+        "High Interest": ["interest", "interest rate"],
+        "Late Payment Fee": ["late fee", "delay"],
+        "Hidden Charges": ["charges", "processing fee"],
+        "Termination Clause": ["termination", "cancel"]
     }
 
     risks = []
@@ -84,7 +42,7 @@ def analyze_contract(text):
 
     return list(set(risks))
 
-# Risk score
+# Score
 def calculate_score(risks):
     return len(risks) * 20
 
@@ -99,7 +57,7 @@ def generate_suggestions(risks):
         elif "Late" in r:
             suggestions.append("Ask flexible payment terms.")
         elif "Hidden" in r:
-            suggestions.append("Check all extra charges.")
+            suggestions.append("Check extra charges carefully.")
         elif "Termination" in r:
             suggestions.append("Review exit conditions.")
     return suggestions
@@ -109,22 +67,15 @@ def generate_summary(text):
     sentences = text.split(".")
     return ". ".join(sentences[:3]) if len(sentences) > 3 else text
 
-# Highlight keywords
-def highlight_keywords(text):
-    keywords = ["penalty", "interest", "charges", "fee"]
-    for word in keywords:
-        text = text.replace(word, f"**{word.upper()}**")
-    return text
-
 # MAIN
 if uploaded_file:
 
-    st.success("✅ File uploaded successfully!")
+    st.success("File uploaded successfully!")
 
     text = extract_text(uploaded_file)
 
     if len(text) == 0:
-        st.error("❌ Cannot read this PDF. Try another file.")
+        st.error("Cannot read this PDF. Try another file.")
     else:
         risks = analyze_contract(text)
         score = calculate_score(risks)
@@ -134,50 +85,42 @@ if uploaded_file:
         st.divider()
 
         # Summary
-        with st.expander("📄 Contract Summary"):
+        with st.expander("Contract Summary"):
             st.write(summary)
 
         col1, col2 = st.columns(2)
 
         with col1:
-            st.subheader("⚠️ Risks Detected")
+            st.subheader("Risks Detected")
             if risks:
                 for r in risks:
-                    st.markdown(f"<div class='card'>{r}</div>", unsafe_allow_html=True)
+                    st.write("•", r)
             else:
                 st.success("No major risks found")
 
         with col2:
-            st.subheader("📊 Risk Score")
+            st.subheader("Risk Score")
             st.progress(score / 100)
-            st.write(f"Risk Level: {score}%")
+            st.write(f"{score}% Risk")
 
         st.divider()
 
-        # Suggestions
-        st.subheader("💡 Suggestions")
+        st.subheader("Suggestions")
         if suggestions:
             for s in suggestions:
-                st.markdown(f"<div class='card'>👉 {s}</div>", unsafe_allow_html=True)
+                st.write("👉", s)
         else:
             st.write("No suggestions needed")
 
         st.divider()
 
-        # Highlight text
-        with st.expander("🔍 Highlighted Contract Text"):
-            st.write(highlight_keywords(text[:1500]))
-
-        st.divider()
-
-        # Final advice
-        st.subheader("📌 Final Advice")
+        st.subheader("Final Advice")
         if score > 60:
-            st.error("⚠️ High risk contract! Review carefully.")
+            st.error("High risk contract")
         elif score > 30:
-            st.warning("Moderate risk. Try negotiation.")
+            st.warning("Moderate risk")
         else:
-            st.success("Low risk contract 👍")
+            st.success("Low risk contract")
 
         st.divider()
 
@@ -193,4 +136,5 @@ Risks:
 Suggestions:
 {', '.join(suggestions)}
 """
-        st.download_button("📥 Download Report", report, file_name="report.txt")
+        st.download_button("Download Report", report, file_name="report.txt")
+# Highlight keywords
