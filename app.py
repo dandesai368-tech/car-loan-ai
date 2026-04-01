@@ -4,11 +4,14 @@ import PyPDF2
 # Page config
 st.set_page_config(page_title="Car Loan AI Assistant", layout="wide")
 
-# White UI styling
+# ✅ FIXED WHITE UI
 st.markdown("""
 <style>
-body {
-    background-color: white;
+[data-testid="stAppViewContainer"] {
+    background-color: #ffffff;
+}
+[data-testid="stSidebar"] {
+    background-color: #f5f5f5;
 }
 h1 {
     color: #2E86C1;
@@ -24,15 +27,21 @@ h2, h3 {
     height: 3em;
     width: 100%;
 }
+.card {
+    padding: 15px;
+    border-radius: 10px;
+    background-color: #f8f9fa;
+    margin-bottom: 10px;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # Title
 st.title("🚗 Car Loan Contract AI Assistant")
-st.write("Upload your contract and get smart insights 📊")
+st.write("Analyze your contract and get smart insights 📊")
 
-# Upload file
-uploaded_file = st.file_uploader("📄 Upload PDF", type=["pdf"])
+# Upload
+uploaded_file = st.file_uploader("📄 Upload Contract (PDF)", type=["pdf"])
 
 # Extract text
 def extract_text(file):
@@ -46,25 +55,24 @@ def extract_text(file):
     except:
         return ""
 
-# Analyze risks
+# Risk detection
 def analyze_contract(text):
     risk_dict = {
         "⚠️ Penalty Charges": ["penalty", "fine"],
         "💰 High Interest": ["interest", "interest rate"],
-        "⏰ Late Payment Fee": ["late fee", "delay charge"],
-        "📑 Hidden Charges": ["extra charges", "processing fee"],
+        "⏰ Late Payment Fee": ["late fee", "delay"],
+        "📑 Hidden Charges": ["charges", "processing fee"],
         "❌ Termination Clause": ["termination", "cancel"]
     }
 
-    found_risks = []
-
+    risks = []
     for category, words in risk_dict.items():
         for word in words:
             if word in text:
-                found_risks.append(category)
+                risks.append(category)
                 break
 
-    return list(set(found_risks))
+    return list(set(risks))
 
 # Risk score
 def calculate_score(risks):
@@ -73,19 +81,17 @@ def calculate_score(risks):
 # Suggestions
 def generate_suggestions(risks):
     suggestions = []
-
     for r in risks:
         if "Penalty" in r:
-            suggestions.append("👉 Try to reduce penalty charges.")
+            suggestions.append("Reduce penalty charges.")
         elif "Interest" in r:
-            suggestions.append("👉 Negotiate for lower interest rate.")
+            suggestions.append("Negotiate lower interest rate.")
         elif "Late" in r:
-            suggestions.append("👉 Request flexible payment options.")
+            suggestions.append("Ask flexible payment terms.")
         elif "Hidden" in r:
-            suggestions.append("👉 Ask for full cost breakdown.")
+            suggestions.append("Check all extra charges.")
         elif "Termination" in r:
-            suggestions.append("👉 Check early exit conditions.")
-
+            suggestions.append("Review exit conditions.")
     return suggestions
 
 # Summary
@@ -93,19 +99,22 @@ def generate_summary(text):
     sentences = text.split(".")
     return ". ".join(sentences[:3]) if len(sentences) > 3 else text
 
+# Highlight keywords
+def highlight_keywords(text):
+    keywords = ["penalty", "interest", "charges", "fee"]
+    for word in keywords:
+        text = text.replace(word, f"**{word.upper()}**")
+    return text
+
 # MAIN
-if uploaded_file is not None:
+if uploaded_file:
 
     st.success("✅ File uploaded successfully!")
 
-    # Automatically analyze (no button issue)
     text = extract_text(uploaded_file)
 
-    # Debug info
-    st.write("📊 Extracted Text Length:", len(text))
-
     if len(text) == 0:
-        st.error("❌ Cannot read this PDF. Try another file or simple text PDF.")
+        st.error("❌ Cannot read this PDF. Try another file.")
     else:
         risks = analyze_contract(text)
         score = calculate_score(risks)
@@ -114,44 +123,65 @@ if uploaded_file is not None:
 
         st.divider()
 
-        # Summary
+        # 📄 Summary
         with st.expander("📄 Contract Summary"):
             st.write(summary)
 
-        # Columns
+        # 📊 Dashboard
         col1, col2 = st.columns(2)
 
         with col1:
-            st.subheader("⚠️ Risks Detected")
+            st.markdown("### ⚠️ Risks Detected")
             if risks:
                 for r in risks:
-                    st.write(r)
+                    st.markdown(f"<div class='card'>{r}</div>", unsafe_allow_html=True)
             else:
-                st.success("No major risks found ✅")
+                st.success("No major risks found")
 
         with col2:
-            st.subheader("📊 Risk Score")
+            st.markdown("### 📊 Risk Score")
             st.progress(score / 100)
             st.write(f"Risk Level: {score}%")
 
         st.divider()
 
-        # Suggestions
-        st.subheader("💡 Suggestions")
+        # 💡 Suggestions
+        st.markdown("### 💡 Suggestions")
         if suggestions:
             for s in suggestions:
-                st.write(s)
+                st.markdown(f"<div class='card'>👉 {s}</div>", unsafe_allow_html=True)
         else:
-            st.write("👍 No suggestions needed")
+            st.write("No suggestions needed")
 
         st.divider()
 
-        # Final Advice
-        st.subheader("📌 Final Advice")
+        # 🔍 Highlighted text
+        with st.expander("🔍 Highlighted Contract Text"):
+            st.write(highlight_keywords(text[:1500]))
+
+        st.divider()
+
+        # 📌 Final Advice
+        st.markdown("### 📌 Final Advice")
         if score > 60:
             st.error("⚠️ High risk contract! Review carefully.")
         elif score > 30:
-            st.warning("⚠️ Moderate risk. Try negotiation.")
+            st.warning("Moderate risk. Try negotiation.")
         else:
-            st.success("✅ Low risk contract. Looks good!")
-# Main logic
+            st.success("Low risk contract 👍")
+
+        st.divider()
+
+        # 📥 Download Report
+        report = f"""
+Contract Analysis Report
+
+Risk Score: {score}%
+
+Risks:
+{', '.join(risks)}
+
+Suggestions:
+{', '.join(suggestions)}
+"""
+        st.download_button("📥 Download Report", report, file_name="report.txt")
