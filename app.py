@@ -4,22 +4,29 @@ import PyPDF2
 # Page config
 st.set_page_config(page_title="Car Loan AI Assistant", layout="wide")
 
-# ✅ FIXED WHITE UI
+# ✅ WHITE UI + DARK TEXT FIX
 st.markdown("""
 <style>
+/* Background */
 [data-testid="stAppViewContainer"] {
     background-color: #ffffff;
 }
-[data-testid="stSidebar"] {
-    background-color: #f5f5f5;
+
+/* Force all text to dark */
+html, body, [class*="css"] {
+    color: #000000 !important;
 }
+
+/* Headings */
 h1 {
-    color: #2E86C1;
+    color: #2E86C1 !important;
     text-align: center;
 }
 h2, h3 {
-    color: #1B4F72;
+    color: #1B4F72 !important;
 }
+
+/* Buttons */
 .stButton>button {
     background-color: #2E86C1;
     color: white;
@@ -27,11 +34,14 @@ h2, h3 {
     height: 3em;
     width: 100%;
 }
+
+/* Cards */
 .card {
     padding: 15px;
     border-radius: 10px;
     background-color: #f8f9fa;
     margin-bottom: 10px;
+    color: black;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -123,15 +133,14 @@ if uploaded_file:
 
         st.divider()
 
-        # 📄 Summary
+        # Summary
         with st.expander("📄 Contract Summary"):
             st.write(summary)
 
-        # 📊 Dashboard
         col1, col2 = st.columns(2)
 
         with col1:
-            st.markdown("### ⚠️ Risks Detected")
+            st.subheader("⚠️ Risks Detected")
             if risks:
                 for r in risks:
                     st.markdown(f"<div class='card'>{r}</div>", unsafe_allow_html=True)
@@ -139,14 +148,14 @@ if uploaded_file:
                 st.success("No major risks found")
 
         with col2:
-            st.markdown("### 📊 Risk Score")
+            st.subheader("📊 Risk Score")
             st.progress(score / 100)
             st.write(f"Risk Level: {score}%")
 
         st.divider()
 
-        # 💡 Suggestions
-        st.markdown("### 💡 Suggestions")
+        # Suggestions
+        st.subheader("💡 Suggestions")
         if suggestions:
             for s in suggestions:
                 st.markdown(f"<div class='card'>👉 {s}</div>", unsafe_allow_html=True)
@@ -155,14 +164,14 @@ if uploaded_file:
 
         st.divider()
 
-        # 🔍 Highlighted text
+        # Highlight text
         with st.expander("🔍 Highlighted Contract Text"):
             st.write(highlight_keywords(text[:1500]))
 
         st.divider()
 
-        # 📌 Final Advice
-        st.markdown("### 📌 Final Advice")
+        # Final advice
+        st.subheader("📌 Final Advice")
         if score > 60:
             st.error("⚠️ High risk contract! Review carefully.")
         elif score > 30:
@@ -172,7 +181,7 @@ if uploaded_file:
 
         st.divider()
 
-        # 📥 Download Report
+        # Download report
         report = f"""
 Contract Analysis Report
 
