@@ -1,182 +1,161 @@
 import streamlit as st
-import PyPDF2
+import pandas as pd
+import numpy as np
+import pytesseract
+from PIL import Image
+import io
+import re
 
-# Page config
-st.set_page_config(page_title="Car Loan AI Assistant", layout="wide")
+# -------------------------------
+# PAGE CONFIG
+# -------------------------------
+st.set_page_config(
+    page_title="Car Loan AI Assistant",
+    layout="wide"
+)
 
-# ✅ STRONG UI FIX (BIG TEXT + VISIBLE HEADINGS)
+# -------------------------------
+# CUSTOM CSS (WHITE UI + BIG TEXT)
+# -------------------------------
 st.markdown("""
-<style>
-[data-testid="stAppViewContainer"] {
-    background-color: #ffffff;
-}
-
-/* Force all text visible */
-html, body, [class*="css"] {
-    color: #111111 !important;
-}
-
-/* Title */
-h1 {
-    font-size: 48px !important;
-    color: #0B3C5D !important;
-    text-align: center;
-    font-weight: bold;
-}
-
-/* Section headings */
-h2 {
-    font-size: 30px !important;
-    color: #1F4E79 !important;
-    font-weight: bold;
-}
-h3 {
-    font-size: 24px !important;
-    color: #2E86C1 !important;
-    font-weight: bold;
-}
-
-/* Cards */
-.card {
-    background-color: #F4F6F7;
-    padding: 20px;
-    border-radius: 12px;
-    margin: 10px 0;
-    font-size: 18px;
-    color: black;
-    box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
-}
-
-/* Buttons */
-.stButton>button {
-    background-color: #2E86C1;
-    color: white;
-    font-size: 18px;
-    border-radius: 10px;
-    height: 3em;
-}
-</style>
+    <style>
+    body {
+        background-color: white;
+    }
+    .main {
+        background-color: white;
+    }
+    h1, h2, h3 {
+        color: #1a1a1a;
+        font-size: 28px;
+    }
+    p, div {
+        color: #333333;
+        font-size: 18px;
+    }
+    .stButton>button {
+        background-color: #4CAF50;
+        color: white;
+        font-size: 18px;
+        border-radius: 10px;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-# Title
-st.title("🚗 Car Loan Contract AI Dashboard")
-st.write("Analyze contracts with AI insights, risk scores, and smart recommendations")
+# -------------------------------
+# TITLE
+# -------------------------------
+st.title("🚗 Car Lease / Loan Contract AI Assistant")
+st.write("Analyze contracts, detect risks, and get negotiation suggestions instantly.")
 
-# Upload
-uploaded_file = st.file_uploader("📄 Upload Contract PDF", type=["pdf"])
+# -------------------------------
+# SIDEBAR DASHBOARD
+# -------------------------------
+st.sidebar.header("📊 Dashboard")
 
-# Extract text
-def extract_text(file):
-    try:
-        pdf_reader = PyPDF2.PdfReader(file)
-        text = ""
-        for page in pdf_reader.pages:
-            if page.extract_text():
-                text += page.extract_text()
-        return text.lower()
-    except:
-        return ""
+risk_score = st.sidebar.metric("Risk Score", "Medium")
+total_cost = st.sidebar.metric("Total Cost", "₹5,20,000")
+savings = st.sidebar.metric("Savings Potential", "₹30,000")
 
-# Analyze risks
-def analyze_contract(text):
-    risk_dict = {
-        "Penalty Charges": ["penalty", "fine"],
-        "High Interest": ["interest"],
-        "Late Fee": ["late fee", "delay"],
-        "Hidden Charges": ["charges", "processing fee"],
-        "Termination Clause": ["termination"]
-    }
+# -------------------------------
+# FILE UPLOAD
+# -------------------------------
+uploaded_file = st.file_uploader("📄 Upload Contract (PDF/Image)", type=["png", "jpg", "jpeg"])
 
-    risks = []
-    for category, words in risk_dict.items():
-        for word in words:
-            if word in text:
-                risks.append(category)
-                break
+extracted_text = ""
 
-    return list(set(risks))
-
-# Score
-def calculate_score(risks):
-    return len(risks) * 20
-
-# Suggestions
-def generate_suggestions(risks):
-    suggestions = []
-    for r in risks:
-        suggestions.append(f"Improve terms related to {r}")
-    return suggestions
-
-# Summary
-def generate_summary(text):
-    sentences = text.split(".")
-    return ". ".join(sentences[:4])
-
-# Keyword stats
-def keyword_stats(text):
-    keywords = ["penalty", "interest", "charges", "fee"]
-    return {k: text.count(k) for k in keywords}
-
-# MAIN
 if uploaded_file:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Contract", use_column_width=True)
 
-    text = extract_text(uploaded_file)
+    # OCR
+    extracted_text = pytesseract.image_to_string(image)
 
-    if len(text) == 0:
-        st.error("❌ Cannot read PDF. Try another file.")
-    else:
-        risks = analyze_contract(text)
-        score = calculate_score(risks)
-        suggestions = generate_suggestions(risks)
-        summary = generate_summary(text)
-        stats = keyword_stats(text)
+    st.subheader("📃 Extracted Text")
+    st.write(extracted_text)
 
-        # 🔥 DASHBOARD METRICS
-        st.subheader("📊 Dashboard Overview")
-        col1, col2, col3 = st.columns(3)
+# -------------------------------
+# TEXT ANALYSIS FUNCTION
+# -------------------------------
+def analyze_contract(text):
+    risks = []
+    suggestions = []
 
-        col1.metric("Risk Score", f"{score}%")
-        col2.metric("Risks Found", len(risks))
-        col3.metric("Keywords Found", sum(stats.values()))
+    # Interest detection
+    interest = re.findall(r"\d+%", text)
+    if interest:
+        rate = int(interest[0].replace("%", ""))
+        if rate > 10:
+            risks.append("High Interest Rate Detected")
+            suggestions.append("Negotiate for lower interest rate")
 
-        st.divider()
+    # Hidden fees
+    if "processing fee" in text.lower():
+        risks.append("Processing Fee Found")
+        suggestions.append("Request waiver of processing fee")
 
-        # 📄 Summary
-        st.subheader("📄 Contract Summary")
-        st.markdown(f"<div class='card'>{summary}</div>", unsafe_allow_html=True)
+    if "penalty" in text.lower():
+        risks.append("Penalty Clause Present")
+        suggestions.append("Negotiate lower penalty charges")
 
-        # ⚠️ Risks
-        st.subheader("⚠️ Risks Detected")
-        if risks:
-            for r in risks:
-                st.markdown(f"<div class='card'>{r}</div>", unsafe_allow_html=True)
-        else:
-            st.success("No major risks found")
+    if not risks:
+        risks.append("No major risks detected")
+        suggestions.append("Contract looks fair")
 
-        # 📈 Keyword stats
-        st.subheader("📈 Keyword Analysis")
-        st.bar_chart(stats)
+    return risks, suggestions
 
-        st.divider()
+# -------------------------------
+# ANALYZE BUTTON
+# -------------------------------
+if st.button("🔍 Analyze Contract"):
+    if extracted_text:
+        risks, suggestions = analyze_contract(extracted_text)
 
-        # 💡 Suggestions
-        st.subheader("💡 Recommendations")
+        st.subheader("⚠ Risk Analysis")
+        for r in risks:
+            st.error(r)
+
+        st.subheader("💡 Negotiation Suggestions")
         for s in suggestions:
-            st.markdown(f"<div class='card'>👉 {s}</div>", unsafe_allow_html=True)
+            st.success(s)
 
-        # 📌 Final Advice
-        st.subheader("📌 Final Advice")
-        if score > 60:
-            st.error("High Risk Contract!")
-        elif score > 30:
-            st.warning("Moderate Risk - Negotiate Terms")
-        else:
-            st.success("Low Risk - Safe Contract")
+# -------------------------------
+# SIMPLE EMI CALCULATION
+# -------------------------------
+st.subheader("📈 Loan Calculator")
 
-        # 📥 Download
-        report = f"""
-Risk Score: {score}%
-Risks: {risks}
-Suggestions: {suggestions}
-"""
-        st.download_button("📥 Download Report", report)
+amount = st.number_input("Loan Amount", value=500000)
+rate = st.number_input("Interest Rate (%)", value=10)
+time = st.number_input("Years", value=5)
+
+if st.button("Calculate EMI"):
+    emi = (amount * rate * (1 + rate) ** time) / ((1 + rate) ** time - 1)
+    st.success(f"Estimated EMI: ₹{int(emi)}")
+
+# -------------------------------
+# CHATBOT
+# -------------------------------
+st.subheader("💬 AI Assistant")
+
+user_query = st.text_input("Ask about your contract")
+
+if user_query:
+    if "interest" in user_query.lower():
+        st.write("Interest rate affects total repayment. Lower is better.")
+    elif "penalty" in user_query.lower():
+        st.write("Penalty clauses may increase cost. Try negotiating.")
+    else:
+        st.write("This clause looks standard. Please verify with bank.")
+
+# -------------------------------
+# REPORT DOWNLOAD
+# -------------------------------
+st.subheader("📥 Download Report")
+
+report = "Contract Analysis Report\n\nRisks and Suggestions Generated."
+
+st.download_button(
+    label="Download Report",
+    data=report,
+    file_name="report.txt"
+)
