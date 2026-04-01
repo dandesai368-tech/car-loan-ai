@@ -1,22 +1,22 @@
 import streamlit as st
 import PyPDF2
 
-# Page settings
+# Page config
 st.set_page_config(page_title="Car Loan AI Assistant", layout="wide")
 
-# Custom CSS for UI
+# Custom CSS (WHITE UI)
 st.markdown("""
 <style>
-.main {
-    background-color: #0e1117;
+body {
+    background-color: white;
 }
 h1 {
-    color: #00FFAA;
+    color: #2E86C1;
     text-align: center;
 }
 .stButton>button {
-    background-color: #00FFAA;
-    color: black;
+    background-color: #2E86C1;
+    color: white;
     border-radius: 10px;
     height: 3em;
     width: 100%;
@@ -26,11 +26,10 @@ h1 {
 
 # Title
 st.title("🚗 Car Loan Contract AI Assistant")
+st.markdown("### 📄 Upload your contract and get AI-based analysis")
 
-st.write("Upload your loan agreement and get smart analysis")
-
-# File upload
-uploaded_file = st.file_uploader("📄 Upload PDF", type=["pdf"])
+# Upload file
+uploaded_file = st.file_uploader("📂 Upload PDF File", type=["pdf"])
 
 # Extract text
 def extract_text(file):
@@ -44,11 +43,11 @@ def extract_text(file):
 # Analyze risks
 def analyze_contract(text):
     risk_dict = {
-        "Penalty Charges": ["penalty", "fine"],
-        "High Interest": ["interest", "interest rate"],
-        "Late Payment Fee": ["late fee", "delay charge"],
-        "Hidden Charges": ["extra charges", "processing fee"],
-        "Termination Clause": ["termination", "cancel"]
+        "⚠️ Penalty Charges": ["penalty", "fine"],
+        "💰 High Interest": ["interest", "interest rate"],
+        "⏰ Late Payment Fee": ["late fee", "delay charge"],
+        "📑 Hidden Charges": ["extra charges", "processing fee"],
+        "❌ Termination Clause": ["termination", "cancel"]
     }
 
     found_risks = []
@@ -63,27 +62,31 @@ def analyze_contract(text):
 
 # Risk score
 def calculate_score(risks):
-    return len(risks) * 20  # simple logic
+    return min(len(risks) * 20, 100)
 
 # Suggestions
 def generate_suggestions(risks):
     suggestions = []
 
     for r in risks:
-        if r == "Penalty Charges":
-            suggestions.append("Negotiate lower penalty charges.")
-        elif r == "High Interest":
-            suggestions.append("Ask for reduced interest rate.")
-        elif r == "Late Payment Fee":
-            suggestions.append("Request flexible payment terms.")
-        elif r == "Hidden Charges":
-            suggestions.append("Ask for full cost breakdown.")
-        elif r == "Termination Clause":
-            suggestions.append("Check early exit conditions.")
+        if "Penalty" in r:
+            suggestions.append("👉 Try to negotiate lower penalty charges.")
+        elif "Interest" in r:
+            suggestions.append("👉 Ask for a reduced interest rate.")
+        elif "Late" in r:
+            suggestions.append("👉 Request flexible payment options.")
+        elif "Hidden" in r:
+            suggestions.append("👉 Ask for a detailed cost breakdown.")
+        elif "Termination" in r:
+            suggestions.append("👉 Carefully review exit conditions.")
 
     return suggestions
 
-# Main logic
+# Simple summary
+def generate_summary(text):
+    return text[:500] + "..."
+
+# Main
 if uploaded_file:
     st.success("✅ File uploaded successfully!")
 
@@ -93,26 +96,37 @@ if uploaded_file:
         risks = analyze_contract(text)
         score = calculate_score(risks)
         suggestions = generate_suggestions(risks)
+        summary = generate_summary(text)
 
         col1, col2 = st.columns(2)
 
+        # Risks
         with col1:
-            st.subheader("⚠️ Risks Detected")
+            st.subheader("⚠️ Detected Risks")
             if risks:
                 for r in risks:
-                    st.write("•", r)
+                    st.write(r)
             else:
-                st.write("No major risks found")
+                st.write("✅ No major risks found")
 
+        # Score
         with col2:
             st.subheader("📊 Risk Score")
             st.progress(score / 100)
-            st.write(f"Risk Level: {score}%")
+            st.write(f"### {score}% Risk Level")
 
+        # Suggestions
         st.subheader("💡 Suggestions")
         if suggestions:
             for s in suggestions:
-                st.write("•", s)
+                st.write(s)
         else:
-            st.write("No suggestions needed")
-           
+            st.write("👍 No suggestions needed")
+
+        # Summary (Expandable)
+        with st.expander("📄 View Contract Summary"):
+            st.write(summary)
+
+        # Raw text (Optional)
+        with st.expander("📝 View Extracted Text"):
+            st.write(text[:1000])
